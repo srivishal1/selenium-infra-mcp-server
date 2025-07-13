@@ -1,4 +1,5 @@
 from mcp_config import mcp
+import uvicorn
 
 # Import the tools to register them with MCP
 import controllers.git as git
@@ -52,5 +53,10 @@ def clone_and_test(repo_url: str, run_on_aws: bool = False, ami_id: str = "", ke
 #         return f"Please run the tests from {repo_url} locally."
 
 # Run the server
+# if __name__ == "__main__":
+#     import uvicorn 
+#     uvicorn.run("mcp_config:mcp.app", host="127.0.0.1", port=7890, reload=True)
+# #    mcp.run()
+
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(transport="http", port=8000)
