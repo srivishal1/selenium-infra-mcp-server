@@ -3,6 +3,9 @@ import subprocess, os, uuid
 
 @mcp.tool()
 def clone_repo(repo_url: str) -> str:
+    return clone_repo_fn(repo_url=repo_url)
+
+def clone_repo_fn(repo_url: str) -> str:
     """
     Clones a GitHub repository to a temporary folder.
     
@@ -10,11 +13,11 @@ def clone_repo(repo_url: str) -> str:
         repo_url (str): The GitHub repository URL.
     
     Returns:
-        str: Path to the cloned repo or error message.
+        str: Path to the cloned repo or error message starting with ❌.
     """
     try:
         if not repo_url.startswith("https://github.com/"):
-            return "Only GitHub HTTPS URLs are supported."
+            return "❌ Only GitHub HTTPS URLs are supported."
 
         # Create a unique directory to avoid collisions
         folder_name = f"repo_{uuid.uuid4().hex[:8]}"
@@ -29,12 +32,14 @@ def clone_repo(repo_url: str) -> str:
         )
 
         if result.returncode != 0:
-            return f"Git clone failed: {result.stderr.strip()}"
+            return f"❌ Git clone failed: {result.stderr.strip()}"
+        
+        print(f"📦 Repo Cloned at {output_dir}.")
 
-        return f" Cloned directory is {output_dir}"
+        return output_dir  # ✅ return actual path
     
     except Exception as e:
-        return f" Error: {str(e)}"
+        return f"❌ Error: {str(e)}"
     
 
     
