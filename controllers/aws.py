@@ -2,8 +2,31 @@ from mcp_config import mcp
 from datetime import datetime, timedelta
 import boto3
 import time
+from typing import List, Optional
 
 @mcp.tool()
+def launch_test_runner(
+    ami_id: str,
+    key_name: str,
+    instance_type: str = "t3.micro",
+    max_count: int = 1,
+    region_name: str = "us-east-1",
+    security_group_ids: Optional[List[str]] = None
+) -> dict:
+    """
+    MCP tool to launch a test runner EC2 instance using an AMI.
+    This tool internally calls the launch_ec2_with_ami() function.
+    """
+    return launch_ec2_with_ami(
+        ami_id=ami_id,
+        key_name=key_name,
+        instance_type=instance_type,
+        max_count=max_count,
+        region_name=region_name,
+        security_group_ids=security_group_ids
+    )
+
+
 def launch_ec2_with_ami(
     ami_id: str,
     key_name: str,
@@ -39,16 +62,17 @@ def launch_ec2_with_ami(
         ec2_instance = ec2_resource.Instance(instance_id)
         ec2_instance.wait_until_running()
         ec2_instance.reload()
-
+        
         return {
             "instance_id": instance_id,
-            "public_ip": ec2_instance.public_ip_address
+            "public_ip": ec2_instance.public_ip_address,
+            "status": "ready"
         }
 
     except Exception as e:
         return {"error": str(e)}
 
-@mcp.tool()
+
 def run_selenium_test_on_aws(instance_id: str, repo_url: str) -> str:
    
     """
@@ -71,6 +95,8 @@ def run_selenium_test_on_aws(instance_id: str, repo_url: str) -> str:
     is_windows = platform.lower() == "windows"
 
     document = "AWS-RunPowerShellScript" if is_windows else "AWS-RunShellScript"
+
+    print(f"📦 Cloning repo {repo_url} and executing test using SSM...")
 
     if is_windows:
         command = f"""
@@ -160,7 +186,10 @@ def run_selenium_test_on_aws(instance_id: str, repo_url: str) -> str:
         return f" Failed to run test via SSM: {str(e)}"
 
 @mcp.tool()
-def terminate_ec2_instance(instance_id: str, region_name = "us-east-1") -> str:
+def terminate_instance(instance_id: str) -> str:
+    return terminate_ec2_instance(instance_id)
+
+def terminate_ec2_instance(instance_id: str, region_name: str = "us-east-1") -> str:
     """
     Terminates an EC2 instance by ID.
     """
@@ -168,9 +197,9 @@ def terminate_ec2_instance(instance_id: str, region_name = "us-east-1") -> str:
         ec2 = boto3.client("ec2", region_name=region_name)
         response = ec2.terminate_instances(InstanceIds=[instance_id])
         state = response["TerminatingInstances"][0]["CurrentState"]["Name"]
-        return f" Instance {instance_id} is now in state: {state}"
+        return f"Instance {instance_id} is now in state: {state}"
     except Exception as e:
-        return f" Failed to terminate instance {instance_id}: {str(e)}"
+        return f"Failed to terminate instance {instance_id}: {str(e)}"
     
 @mcp.tool()
 def get_ec2_cost(

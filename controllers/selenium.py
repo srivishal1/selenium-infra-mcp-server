@@ -4,6 +4,9 @@ import platform
 
 @mcp.tool()
 def run_selenium_tests(repo_path: str) -> str:
+    run_tests(repo_path=repo_path)
+
+def run_tests(repo_path: str) -> str:
     """
     Runs Selenium tests from the specified repository.
     
